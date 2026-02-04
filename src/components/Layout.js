@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { AppBar, Toolbar, Typography, Container, Box, Button, IconButton, CssBaseline } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { AppBar, Toolbar, Typography, Container, Box, Button, IconButton, CssBaseline, Chip } from '@mui/material';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import { getWallet } from '../services/api';
 
 const Layout = () => {
   const [darkMode, setDarkMode] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const themeColors = darkMode
@@ -26,6 +29,21 @@ const Layout = () => {
         buttonText: '#fff',
       };
 
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        const res = await getWallet();
+        setWalletBalance(res.data.balance);
+      } catch (err) {
+        console.error('Failed to fetch wallet balance:', err);
+      }
+    };
+    fetchWallet();
+    // Refresh wallet balance every 30 seconds
+    const interval = setInterval(fetchWallet, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: themeColors.background, fontFamily: 'Inter, Arial, sans-serif' }}>
       <CssBaseline />
@@ -35,6 +53,20 @@ const Layout = () => {
             BigBull
           </Typography>
           <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Chip
+              icon={<AccountBalanceWalletIcon sx={{ color: '#fff !important' }} />}
+              label={`$${walletBalance.toFixed(2)}`}
+              sx={{
+                backgroundColor: '#11998e',
+                color: '#fff',
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                fontFamily: 'Inter, Arial, sans-serif',
+                px: 1,
+                height: 40,
+                '& .MuiChip-label': { px: 1 }
+              }}
+            />
             <Button component={Link} to="/" sx={{ color: themeColors.buttonText, textTransform: 'none', fontSize: '1rem', fontWeight: 500, fontFamily: 'Inter, Arial, sans-serif', backgroundColor: themeColors.button, borderRadius: 2, px: 2, boxShadow: 'none', '&:hover': { backgroundColor: '#1565c0' } }}>Home</Button>
             <Button component={Link} to="/portfolio" sx={{ color: themeColors.buttonText, textTransform: 'none', fontSize: '1rem', fontWeight: 500, fontFamily: 'Inter, Arial, sans-serif', backgroundColor: themeColors.button, borderRadius: 2, px: 2, boxShadow: 'none', '&:hover': { backgroundColor: '#1565c0' } }}>Portfolio</Button>
             <Button component={Link} to="/transactions" sx={{ color: themeColors.buttonText, textTransform: 'none', fontSize: '1rem', fontWeight: 500, fontFamily: 'Inter, Arial, sans-serif', backgroundColor: themeColors.button, borderRadius: 2, px: 2, boxShadow: 'none', '&:hover': { backgroundColor: '#1565c0' } }}>Transactions</Button>

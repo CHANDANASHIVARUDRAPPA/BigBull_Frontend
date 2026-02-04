@@ -18,6 +18,17 @@ export const getAllTransactions = () => javaApi.get('/api/transactions');
 export const getTransactionById = (id) => javaApi.get(`/api/transactions/${id}`);
 export const getTransactionsByAssetId = (assetId) => javaApi.get(`/api/transactions/asset/${assetId}`);
 export const getTransactionsBySymbol = (symbol) => javaApi.get(`/api/transactions/symbol/${symbol}`);
-export const createTransaction = (data) => javaApi.post('/api/transactions', data);
+export const createTransaction = (data) => javaApi.post('/api/transactions', data, {
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+export const buyStock = (data) => javaApi.post('/api/transactions/buy', data);
+export const sellStock = (data) => javaApi.post('/api/transactions/sell', data);
 export const deleteTransaction = (id) => javaApi.delete(`/api/transactions/${id}`);
 export const getAssets = () => javaApi.get('/api/assets');
+
+// Wallet endpoints
+export const getWallet = () => javaApi.get('/api/wallet');
+export const depositWallet = (amount) => javaApi.post('/api/wallet/deposit', { amount });
+export const withdrawWallet = (amount) => javaApi.post('/api/wallet/withdraw', { amount });

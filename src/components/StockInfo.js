@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Typography, Box, Grid, Card, CardContent, Button, Stack, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert } from "@mui/material";
-import { getStockInfo, getStockHistory, createTransaction } from "../services/api";
+import { getStockInfo, getStockHistory, buyStock, sellStock, getWallet, withdrawWallet, depositWallet } from "../services/api";
 import { createWebSocket } from "../services/websocket";
 import TradingViewChart from "../components/stock/TradingViewChart";
 
@@ -19,10 +19,23 @@ const StockInfo = () => {
   const [loading, setLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState('');
+  const [walletBalance, setWalletBalance] = useState(0);
 
   useEffect(() => {
     getStockInfo(symbol).then((res) => setInfo(res.data.info));
   }, [symbol]);
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        const res = await getWallet();
+        setWalletBalance(res.data.balance);
+      } catch (err) {
+        console.error('Failed to fetch wallet balance:', err);
+      }
+    };
+    fetchWallet();
+  }, []);
 
   useEffect(() => {
     getStockHistory(symbol, timeframe).then((res) => {
@@ -46,28 +59,63 @@ const StockInfo = () => {
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      let assetId = info.assetId || info.id;
-      // If assetId is missing, fetch it from the assets endpoint
-      if (!assetId) {
-        const assetsRes = await import('../services/api').then(m => m.getAssets());
-        const assets = assetsRes.data;
-        const found = assets.find(a => a.symbol === symbol);
-        assetId = found ? found.id : undefined;
+      const price = liveData.price || info.currentPrice;
+      const qty = Number(quantity) || 1;
+      
+      // Validate inputs
+      if (!qty || qty < 1) {
+        setSnackbarMsg('Please enter a valid quantity.');
+        setSnackbarOpen(true);
+        setLoading(false);
+        return;
       }
-      if (!assetId) throw new Error('Asset ID not found for this symbol.');
-      await createTransaction({
-        assetId,
-        type: actionType,
-        quantity,
-        price: liveData.price || info.currentPrice,
-      });
+      
+      const totalAmount = price * qty;
+
+      // For BUY: Check wallet balance (but don't withdraw yet)
+      if (actionType === 'BUY') {
+        if (walletBalance < totalAmount) {
+          setSnackbarMsg('Insufficient wallet balance!');
+          setSnackbarOpen(true);
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Create payload with correct structure
+      const transactionPayload = {
+        symbol: symbol,
+        name: info.shortName || info.name || symbol,
+        quantity: qty,
+        price: price
+      };
+      
+      console.log('Transaction type:', actionType);
+      console.log('Transaction payload:', JSON.stringify(transactionPayload, null, 2));
+      
+      // Use correct endpoint based on action type
+      // Backend automatically handles wallet deduction/credit
+      if (actionType === 'BUY') {
+        await buyStock(transactionPayload);
+      } else {
+        await sellStock(transactionPayload);
+      }
+
+      // Refresh wallet balance to get updated amount from backend
+      const walletRes = await getWallet();
+      setWalletBalance(walletRes.data.balance);
+
       setDialogOpen(false);
       setQuantity(1);
       setSnackbarMsg(`${actionType} successful!`);
       setSnackbarOpen(true);
       // Optionally, trigger a refresh of transactions/portfolio here
     } catch (err) {
-      setSnackbarMsg('Transaction failed.');
+      console.error('Transaction error:', err.response || err);
+      console.error('Error data:', err.response?.data);
+      console.error('Error message:', err.response?.data?.message);
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || JSON.stringify(err.response?.data) || err.message || 'Transaction failed.';
+      setSnackbarMsg(errorMsg);
       setSnackbarOpen(true);
     }
     setLoading(false);
@@ -182,13 +230,22 @@ const StockInfo = () => {
             label="Quantity"
             type="number"
             value={quantity}
-            onChange={e => setQuantity(Number(e.target.value))}
+            onChange={e => {
+              const val = e.target.value;
+              setQuantity(val === '' ? '' : Math.max(1, Number(val)));
+            }}
             fullWidth
             sx={{ mt: 2, fontFamily: 'Inter, Arial, sans-serif' }}
-            inputProps={{ min: 1 }}
+            inputProps={{ min: 1, step: 1 }}
           />
           <Typography sx={{ mt: 2, fontFamily: 'Inter, Arial, sans-serif', color: '#232a36' }}>
             Price per share: ${Number(liveData.price || info.currentPrice || 0).toFixed(2)}
+          </Typography>
+          <Typography sx={{ mt: 1, fontFamily: 'Inter, Arial, sans-serif', color: '#232a36', fontWeight: 'bold' }}>
+            Total Amount: ${(Number(liveData.price || info.currentPrice || 0) * (quantity || 0)).toFixed(2)}
+          </Typography>
+          <Typography sx={{ mt: 1, fontFamily: 'Inter, Arial, sans-serif', color: '#11998e', fontWeight: 'bold' }}>
+            Wallet Balance: ${walletBalance.toFixed(2)}
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -199,8 +256,8 @@ const StockInfo = () => {
         </DialogActions>
       </Dialog>
       <Snackbar open={snackbarOpen} autoHideDuration={3000} onClose={() => setSnackbarOpen(false)}>
-        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarMsg.includes('successful') ? 'success' : 'error'} sx={{ width: '100%' }}>
-          {snackbarMsg}
+        <Alert onClose={() => setSnackbarOpen(false)} severity={typeof snackbarMsg === 'string' && snackbarMsg.includes('successful') ? 'success' : 'error'} sx={{ width: '100%' }}>
+          {typeof snackbarMsg === 'string' ? snackbarMsg : JSON.stringify(snackbarMsg)}
         </Alert>
       </Snackbar>
     </Box>
