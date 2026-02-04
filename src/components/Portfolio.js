@@ -2,18 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { Typography, Box, Grid, Card, CardContent, Button, Container } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getPortfolioSummary } from '../services/portfolioApi';
+import { getAssets } from '../services/api';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { useThemeContext } from './Layout';
 
+// Generate a vibrant random color
+const generateColor = (index) => {
+  const colors = [
+    '#059669', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6',
+    '#6366f1', '#14b8a6', '#f97316', '#a855f7', '#ef4444',
+    '#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6'
+  ];
+  return colors[index % colors.length];
+};
+
 const Portfolio = () => {
   const [assets, setAssets] = useState([]);
   const [portfolioMetrics, setPortfolioMetrics] = useState({});
+  const [investmentTypeData, setInvestmentTypeData] = useState([]);
   const navigate = useNavigate();
   const { darkMode, themeColors } = useThemeContext();
 
   useEffect(() => {
+    // Fetch portfolio summary
     getPortfolioSummary().then(res => {
       const data = res.data;
       setPortfolioMetrics({
@@ -22,18 +35,60 @@ const Portfolio = () => {
         totalPNL: data.totalPnl || 0,
         totalPnlPercentage: data.totalPnlPercentage || 0,
       });
-      setAssets(data.holdings || []);
+      const holdings = data.holdings || [];
+      setAssets(holdings);
+      
+      // Fetch all assets to get type information
+      getAssets().then(assetsRes => {
+        const allAssetsData = assetsRes.data;
+        
+        console.log('Holdings:', holdings);
+        console.log('All Assets:', allAssetsData);
+        
+        // Map holdings to their types
+        const typeGroups = {};
+        let totalValue = 0;
+
+        holdings.forEach(holding => {
+          // Find corresponding asset to get type
+          const assetInfo = allAssetsData.find(a => 
+            a.symbol?.toLowerCase() === holding.symbol?.toLowerCase()
+          );
+          
+          console.log(`Matching ${holding.symbol}:`, assetInfo);
+          
+          const type = assetInfo?.type || 'Unknown';
+          const value = holding.currentValue || 0;
+          
+          console.log(`Type: ${type}, Value: ${value}`);
+          
+          if (!typeGroups[type]) {
+            typeGroups[type] = 0;
+          }
+          typeGroups[type] += value;
+          totalValue += value;
+        });
+
+        console.log('Type Groups:', typeGroups);
+        console.log('Total Value:', totalValue);
+
+        // Convert to percentage and format for pie chart
+        const pieData = Object.entries(typeGroups)
+          .map(([type, value], index) => ({
+            name: type,
+            value: totalValue > 0 ? parseFloat(((value / totalValue) * 100).toFixed(2)) : 0,
+            absoluteValue: value,
+            color: generateColor(index)
+          }))
+          .filter(item => item.value > 0); // Only show types with value
+
+        console.log('Pie chart data:', pieData);
+        setInvestmentTypeData(pieData);
+      }).catch(err => {
+        console.error('Failed to fetch assets for type distribution:', err);
+      });
     });
   }, []);
-
-  // Prepare data for investment type pie chart
-  const investmentTypeData = [
-    { name: 'Stocks', value: 45, color: '#059669' },
-    { name: 'Crypto', value: 25, color: '#f59e0b' },
-    { name: 'Mutual Funds', value: 15, color: '#3b82f6' },
-    { name: 'Gold', value: 10, color: '#ec4899' },
-    { name: 'Bitcoin', value: 5, color: '#8b5cf6' },
-  ];
 
   // Prepare data for individual company investments bar chart
   const companyInvestmentData = assets.slice(0, 8).map(asset => ({
@@ -252,40 +307,72 @@ const Portfolio = () => {
                     textAlign: 'center'
                   }}
                 >
-                  Investment Distribution
+                  Investment Distribution by Type
                 </Typography>
-                <Box sx={{ height: 350 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={investmentTypeData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={120}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {investmentTypeData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        content={<CustomTooltip />}
-                        formatter={(value) => [`${value}%`, 'Allocation']}
-                      />
-                      <Legend
-                        verticalAlign="bottom"
-                        height={36}
-                        formatter={(value) => (
-                          <span style={{ color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
-                            {value}
-                          </span>
-                        )}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </Box>
+                {investmentTypeData.length > 0 ? (
+                  <Box sx={{ height: 350 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={investmentTypeData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={120}
+                          paddingAngle={5}
+                          dataKey="value"
+                          label={(entry) => `${entry.name}: ${entry.value}%`}
+                        >
+                          {investmentTypeData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              return (
+                                <Box sx={{
+                                  backgroundColor: themeColors.card,
+                                  border: `1px solid ${themeColors.border}`,
+                                  borderRadius: 2,
+                                  p: 2,
+                                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+                                }}>
+                                  <Typography sx={{ color: themeColors.text, fontWeight: 'bold', mb: 1 }}>
+                                    {data.name}
+                                  </Typography>
+                                  <Typography sx={{ color: data.color, fontSize: '0.9rem' }}>
+                                    Value: ${data.absoluteValue?.toFixed(2) || '0.00'}
+                                  </Typography>
+                                  <Typography sx={{ color: data.color, fontSize: '0.9rem' }}>
+                                    Percentage: {data.value}%
+                                  </Typography>
+                                </Box>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Legend
+                          verticalAlign="bottom"
+                          height={36}
+                          formatter={(value) => (
+                            <span style={{ color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {value}
+                            </span>
+                          )}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </Box>
+                ) : (
+                  <Box sx={{ height: 350, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>
+                      No investment data available
+                    </Typography>
+                  </Box>
+                )}
               </CardContent>
             </Card>
               </Grid>

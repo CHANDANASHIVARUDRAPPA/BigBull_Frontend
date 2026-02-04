@@ -7,6 +7,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import { useThemeContext } from './Layout';
+import Chatbot from './Chatbot';
 
 const SearchBar = () => {
   const [query, setQuery] = useState('');
@@ -301,6 +302,9 @@ const SearchBar = () => {
           </Grid>
         </Grid>
       </Box>
+
+      {/* Chatbot Component */}
+      <Chatbot />
     </Container>
   );
 };
