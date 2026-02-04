@@ -21,12 +21,12 @@ const Optimization = () => {
 
   return (
     <Box>
-      <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#333', mb: 4 }}>🎯 Portfolio Optimization</Typography>
+      <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#232a36', mb: 4, fontFamily: 'Inter, Arial, sans-serif', letterSpacing: 0.5, fontSize: '2.2rem' }}>Portfolio Optimization</Typography>
       <Grid container spacing={3}>
         <Grid item xs={12} md={5}>
-          <Card sx={{ boxShadow: '0 8px 16px rgba(0,0,0,0.1)', height: '100%' }}>
+          <Card sx={{ boxShadow: '0 4px 12px rgba(0,0,0,0.08)', height: '100%', backgroundColor: '#fff', borderRadius: 3 }}>
             <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>Optimization Settings</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, fontFamily: 'Inter, Arial, sans-serif', fontSize: '1.3rem', color: '#232a36' }}>Optimization Settings</Typography>
               <TextField
                 label="Budget ($)"
                 type="number"
@@ -49,14 +49,14 @@ const Optimization = () => {
                   step={0.1}
                   sx={{ '& .MuiSlider-thumb': { backgroundColor: '#667eea' }, '& .MuiSlider-track': { backgroundColor: '#667eea' } }}
                 />
-                <Typography variant="caption" sx={{ color: '#999', display: 'block', mt: 1 }}>Low risk = Stable assets • High risk = Growth assets</Typography>
+                <Typography variant="caption" sx={{ color: '#999', displinay: 'block', mt: 1 }}>Low risk = Stable assets • High risk = Growth assets</Typography>
               </Box>
               <Button 
                 variant="contained" 
                 onClick={handleOptimize} 
                 disabled={loading}
                 fullWidth
-                sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', textTransform: 'none', fontWeight: 600, py: 1.5, fontSize: '1rem' }}
+                sx={{ backgroundColor: '#232a36', color: '#fff', textTransform: 'none', fontWeight: 600, py: 1.5, fontSize: '1.1rem', borderRadius: 2, fontFamily: 'Inter, Arial, sans-serif' }}
               >
                 {loading ? 'Analyzing Portfolio...' : 'Optimize Now'}
               </Button>
@@ -65,7 +65,7 @@ const Optimization = () => {
         </Grid>
         <Grid item xs={12} md={7}>
           {loading && (
-            <Card sx={{ boxShadow: '0 8px 16px rgba(0,0,0,0.1)' }}>
+            <Card sx={{ boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#fff', borderRadius: 3 }}>
               <CardContent sx={{ textAlign: 'center', py: 6 }}>
                 <Typography sx={{ mb: 2 }}>Processing your portfolio...</Typography>
                 <LinearProgress sx={{ '& .MuiLinearProgress-bar': { backgroundColor: '#667eea' } }} />
@@ -73,17 +73,15 @@ const Optimization = () => {
             </Card>
           )}
           {result && !loading && (
-            <Card sx={{ boxShadow: '0 8px 16px rgba(0,0,0,0.1)', background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
+            <Card sx={{ boxShadow: '0 4px 12px rgba(0,0,0,0.08)', backgroundColor: '#fff', borderRadius: 3 }}>
               <CardContent>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>📊 Optimal Allocation Results</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, fontFamily: 'Inter, Arial, sans-serif', fontSize: '1.3rem', color: '#232a36' }}>Optimal Allocation Results</Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {Object.entries(result.optimal_allocation || {}).map(([symbol, alloc]) => (
                     alloc.selected && (
-                      <Box key={symbol} sx={{ backgroundColor: 'white', p: 2, borderRadius: 2, borderLeft: '4px solid #667eea' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                          <Typography sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{symbol}</Typography>\n                          <Typography sx={{ color: '#667eea', fontWeight: 'bold', fontSize: '1.1rem' }}>$ {alloc.allocation?.toFixed(2) || '0.00'}</Typography>
-                        </Box>
-                        <LinearProgress variant="determinate" value={alloc.percentage || 0} sx={{ mb: 1, height: 6, borderRadius: 3, backgroundColor: '#eee', '& .MuiLinearProgress-bar': { backgroundColor: '#667eea' } }} />\n                        <Typography variant="caption" sx={{ color: '#999' }}>{(alloc.percentage || 0).toFixed(1)}% of portfolio</Typography>
+                      <Box key={symbol} sx={{ backgroundColor: '#f5f7fa', p: 2.5, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'Inter, Arial, sans-serif', fontSize: '1.1rem', mb: 1 }}>
+                        <Typography sx={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#232a36', letterSpacing: 0.5 }}>{symbol}</Typography>
+                        <Typography sx={{ color: '#232a36', fontWeight: 500, fontSize: '1.1rem', ml: 2 }}>Current Value: ${alloc.live_value?.toFixed(2) || alloc.current_value?.toFixed(2) || '0.00'}</Typography>
                       </Box>
                     )
                   ))}
