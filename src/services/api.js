@@ -12,6 +12,7 @@ export const getStockHistory = (symbol, timeframe = '1M') => flaskApi.get(`/api/
 export const getStockInfo = (symbol) => flaskApi.get(`/api/stock/info/${symbol}`);
 export const getStockQuote = (symbol) => flaskApi.get(`/api/stock/quote/${symbol}`);
 export const optimizePortfolio = (params) => flaskApi.get('/api/portfolio/optimize', { params });
+export const getStockNews = (symbol) => flaskApi.get(`/api/stock/news/${symbol}`);
 
 // Java endpoints
 export const getAllTransactions = () => javaApi.get('/api/transactions');

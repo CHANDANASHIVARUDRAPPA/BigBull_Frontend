@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, Grid, Card, CardContent, Button, Container } from '@mui/material';
+import { Typography, Box, Grid, Card, CardContent, Button, Container, Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getPortfolioSummary } from '../services/portfolioApi';
-import { getAssets } from '../services/api';
+import { getAssets, getStockNews } from '../services/api';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import NewspaperIcon from '@mui/icons-material/Newspaper';
 import { useThemeContext } from './Layout';
 
 // Generate a vibrant random color
@@ -22,6 +23,7 @@ const Portfolio = () => {
   const [assets, setAssets] = useState([]);
   const [portfolioMetrics, setPortfolioMetrics] = useState({});
   const [investmentTypeData, setInvestmentTypeData] = useState([]);
+  const [newsData, setNewsData] = useState([]);
   const navigate = useNavigate();
   const { darkMode, themeColors } = useThemeContext();
 
@@ -87,6 +89,38 @@ const Portfolio = () => {
       }).catch(err => {
         console.error('Failed to fetch assets for type distribution:', err);
       });
+
+      // Fetch news for each holding
+      if (holdings.length > 0) {
+        console.log('Fetching news for holdings:', holdings);
+        const newsPromises = holdings.slice(0, 5).map(holding => 
+          getStockNews(holding.symbol)
+            .then(res => {
+              console.log(`News response for ${holding.symbol}:`, res.data);
+              const newsArray = res.data?.news || [];
+              return {
+                symbol: holding.symbol,
+                name: holding.name,
+                news: newsArray.length > 0 ? newsArray[0].content : null
+              };
+            })
+            .catch(err => {
+              console.error(`Failed to fetch news for ${holding.symbol}:`, err);
+              return { symbol: holding.symbol, name: holding.name, news: null };
+            })
+        );
+
+        Promise.all(newsPromises).then(allNews => {
+          console.log('All news fetched:', allNews);
+          const validNews = allNews.filter(item => item.news !== null);
+          console.log('Valid news items:', validNews);
+          setNewsData(validNews);
+        });
+      } else {
+        console.log('No holdings available for news fetch');
+      }
+    }).catch(err => {
+      console.error('Failed to fetch portfolio summary:', err);
     });
   }, []);
 
@@ -140,10 +174,9 @@ const Portfolio = () => {
         </Typography>
 
         {/* Portfolio Metrics & Charts Layout */}
-        <Grid container spacing={4} sx={{ mb: 6 }}>
-          {/* Metrics Column - Left Side */}
-          <Grid item xs={12} lg={3} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {/* Total Invested */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          {/* Metrics Row - All in one line */}
+          <Grid item xs={12} sm={6} md={3}>
             <Card sx={{
               backgroundColor: themeColors.card,
               color: themeColors.text,
@@ -151,7 +184,8 @@ const Portfolio = () => {
               borderRadius: 3,
               border: `1px solid ${themeColors.border}`,
               transition: 'all 0.3s ease',
-              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 16px 48px rgba(0,0,0,0.12)' }
+              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 16px 48px rgba(0,0,0,0.12)' },
+              height: '100%'
             }}>
               <CardContent sx={{ textAlign: 'center', py: 3 }}>
                 <Typography variant="body2" sx={{
@@ -173,8 +207,9 @@ const Portfolio = () => {
                 </Typography>
               </CardContent>
             </Card>
+          </Grid>
 
-            {/* Current Value */}
+          <Grid item xs={12} sm={6} md={3}>
             <Card sx={{
               backgroundColor: themeColors.card,
               color: themeColors.text,
@@ -182,7 +217,8 @@ const Portfolio = () => {
               borderRadius: 3,
               border: `1px solid ${themeColors.border}`,
               transition: 'all 0.3s ease',
-              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 16px 48px rgba(0,0,0,0.12)' }
+              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 16px 48px rgba(0,0,0,0.12)' },
+              height: '100%'
             }}>
               <CardContent sx={{ textAlign: 'center', py: 3 }}>
                 <Typography variant="body2" sx={{
@@ -204,8 +240,9 @@ const Portfolio = () => {
                 </Typography>
               </CardContent>
             </Card>
+          </Grid>
 
-            {/* Total P&L */}
+          <Grid item xs={12} sm={6} md={3}>
             <Card sx={{
               backgroundColor: themeColors.card,
               color: themeColors.text,
@@ -213,7 +250,8 @@ const Portfolio = () => {
               borderRadius: 3,
               border: `1px solid ${themeColors.border}`,
               transition: 'all 0.3s ease',
-              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 16px 48px rgba(0,0,0,0.12)' }
+              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 16px 48px rgba(0,0,0,0.12)' },
+              height: '100%'
             }}>
               <CardContent sx={{ textAlign: 'center', py: 3 }}>
                 <Typography variant="body2" sx={{
@@ -243,8 +281,9 @@ const Portfolio = () => {
                 </Box>
               </CardContent>
             </Card>
+          </Grid>
 
-            {/* P&L Percentage */}
+          <Grid item xs={12} sm={6} md={3}>
             <Card sx={{
               backgroundColor: themeColors.card,
               color: themeColors.text,
@@ -252,7 +291,8 @@ const Portfolio = () => {
               borderRadius: 3,
               border: `1px solid ${themeColors.border}`,
               transition: 'all 0.3s ease',
-              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 16px 48px rgba(0,0,0,0.12)' }
+              '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 16px 48px rgba(0,0,0,0.12)' },
+              height: '100%'
             }}>
               <CardContent sx={{ textAlign: 'center', py: 3 }}>
                 <Typography variant="body2" sx={{
@@ -283,12 +323,12 @@ const Portfolio = () => {
               </CardContent>
             </Card>
           </Grid>
+        </Grid>
 
-          {/* Charts Section - Right Side */}
-          <Grid item xs={12} lg={9}>
-            <Grid container spacing={4}>
-              {/* Investment Type Distribution Pie Chart */}
-              <Grid item xs={12} lg={6}>
+        {/* Charts and News Section */}
+        <Grid container spacing={4} sx={{ mb: 6 }}>
+          {/* Investment Type Distribution Pie Chart */}
+          <Grid item xs={12} lg={6}>
                 <Card sx={{
                   backgroundColor: themeColors.card,
                   borderRadius: 3,
@@ -377,8 +417,134 @@ const Portfolio = () => {
             </Card>
               </Grid>
 
-              {/* Individual Company Investments Bar Chart */}
+              {/* Top News Section */}
               <Grid item xs={12} lg={6}>
+                <Card sx={{
+                  backgroundColor: themeColors.card,
+                  borderRadius: 3,
+                  border: `1px solid ${themeColors.border}`,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                  height: '100%'
+                }}>
+                  <CardContent sx={{ p: 4 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                      <NewspaperIcon sx={{ color: themeColors.accent, fontSize: 28 }} />
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 'bold',
+                          color: themeColors.text,
+                          fontFamily: 'Inter, Arial, sans-serif'
+                        }}
+                      >
+                        Latest News
+                      </Typography>
+                    </Box>
+                    
+                    {newsData.length > 0 ? (
+                      <Box sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: 2,
+                        maxHeight: 400,
+                        overflowY: 'auto',
+                        pr: 1,
+                        '&::-webkit-scrollbar': {
+                          width: '6px',
+                        },
+                        '&::-webkit-scrollbar-track': {
+                          backgroundColor: themeColors.border,
+                          borderRadius: '3px',
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                          backgroundColor: themeColors.accent,
+                          borderRadius: '3px',
+                        }
+                      }}>
+                        {newsData.map((item, idx) => (
+                          <Box
+                            key={idx}
+                            sx={{
+                              p: 2,
+                              borderRadius: 2,
+                              backgroundColor: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                              border: `1px solid ${themeColors.border}`,
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                backgroundColor: themeColors.hover,
+                                transform: 'translateX(4px)'
+                              }
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: themeColors.accent,
+                                fontWeight: 'bold',
+                                fontFamily: 'Inter, Arial, sans-serif',
+                                fontSize: '0.75rem',
+                                mb: 0.5,
+                                display: 'block'
+                              }}
+                            >
+                              {item.symbol} - {item.name}
+                            </Typography>
+                            <Link
+                              href={item.news.clickThroughUrl?.url || item.news.canonicalUrl?.url || '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              underline="hover"
+                              sx={{
+                                color: themeColors.text,
+                                textDecoration: 'none',
+                                '&:hover': {
+                                  color: themeColors.accent
+                                }
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontWeight: 600,
+                                  fontFamily: 'Inter, Arial, sans-serif',
+                                  fontSize: '0.9rem',
+                                  mb: 1,
+                                  lineHeight: 1.4
+                                }}
+                              >
+                                {item.news.title}
+                              </Typography>
+                            </Link>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: themeColors.secondary,
+                                fontFamily: 'Inter, Arial, sans-serif',
+                                fontSize: '0.7rem'
+                              }}
+                            >
+                              {item.news.provider?.displayName || 'Unknown'} • {item.news.pubDate ? new Date(item.news.pubDate).toLocaleDateString() : 'N/A'}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Box sx={{ height: 350, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                        <NewspaperIcon sx={{ fontSize: 48, color: themeColors.secondary }} />
+                        <Typography sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif', textAlign: 'center' }}>
+                          {assets.length > 0 ? 'Loading news...' : 'No holdings available'}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          Check console for details
+                        </Typography>
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Individual Company Investments Bar Chart */}
+              <Grid item xs={12}>
                 <Card sx={{
                   backgroundColor: themeColors.card,
             borderRadius: 3,
@@ -429,8 +595,6 @@ const Portfolio = () => {
               </Box>
             </CardContent>
           </Card>
-              </Grid>
-            </Grid>
           </Grid>
         </Grid>
 

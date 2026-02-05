@@ -279,7 +279,7 @@ const Optimization = () => {
                               border: `1px solid ${themeColors.border}`,
                               display: 'flex',
                               alignItems: 'center',
-                              justifyContent: 'space-between',
+                              gap: 2,
                               transition: 'all 0.2s ease',
                               '&:hover': {
                                 backgroundColor: themeColors.hover,
@@ -287,50 +287,26 @@ const Optimization = () => {
                               }
                             }}
                           >
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                              <Typography
-                                sx={{
-                                  fontWeight: 'bold',
-                                  fontSize: '1.2rem',
-                                  color: themeColors.accent,
-                                  fontFamily: 'Inter, Arial, sans-serif',
-                                  minWidth: 60
-                                }}
-                              >
-                                {symbol}
-                              </Typography>
-                              <Chip
-                                label="Recommended"
-                                sx={{
-                                  backgroundColor: '#059669',
-                                  color: '#ffffff',
-                                  fontSize: '0.75rem',
-                                  fontFamily: 'Inter, Arial, sans-serif'
-                                }}
-                                size="small"
-                              />
-                            </Box>
-                            <Box sx={{ textAlign: 'right' }}>
-                              <Typography
-                                sx={{
-                                  color: themeColors.text,
-                                  fontWeight: 600,
-                                  fontSize: '1.1rem',
-                                  fontFamily: 'Inter, Arial, sans-serif'
-                                }}
-                              >
-                                ${alloc.live_value?.toFixed(2) || alloc.current_value?.toFixed(2) || '0.00'}
-                              </Typography>
-                              <Typography
-                                sx={{
-                                  color: themeColors.secondary,
-                                  fontSize: '0.9rem',
-                                  fontFamily: 'Inter, Arial, sans-serif'
-                                }}
-                              >
-                                Current Value
-                              </Typography>
-                            </Box>
+                            <Typography
+                              sx={{
+                                fontWeight: 'bold',
+                                fontSize: '1.2rem',
+                                color: themeColors.accent,
+                                fontFamily: 'Inter, Arial, sans-serif'
+                              }}
+                            >
+                              {symbol}
+                            </Typography>
+                            <Chip
+                              label="Recommended"
+                              sx={{
+                                backgroundColor: '#059669',
+                                color: '#ffffff',
+                                fontSize: '0.75rem',
+                                fontFamily: 'Inter, Arial, sans-serif'
+                              }}
+                              size="small"
+                            />
                           </Box>
                         )
                       ))}
