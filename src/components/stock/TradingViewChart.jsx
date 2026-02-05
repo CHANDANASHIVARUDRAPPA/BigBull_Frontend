@@ -6,7 +6,7 @@ import {
   HistogramSeries,
 } from "lightweight-charts";
 
-// --- Indicator helpers ---
+
 function SMA(data, period) {
   const result = [];
   for (let i = 0; i < data.length; i++) {

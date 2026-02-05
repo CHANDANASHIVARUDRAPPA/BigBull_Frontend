@@ -422,8 +422,8 @@ const Portfolio = () => {
                         </span>
                       )}
                     />
-                    <Bar dataKey="invested" fill={themeColors.accent} name="Invested Amount" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="currentValue" fill="#059669" name="Current Value" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="invested" fill="#3b82f6" name="Invested Amount" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="currentValue" fill="#10b981" name="Current Value" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </Box>
