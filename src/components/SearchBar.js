@@ -19,9 +19,17 @@ const SearchBar = () => {
   useEffect(() => {
     if (query.length > 1) {
       searchStocks(query).then(res => {
-        setResults(res.data.results.quotes || []);
+        console.log('Search response:', res.data);
+        // Handle different possible response structures
+        const quotes = res.data.results?.quotes || res.data.quotes || res.data.results || res.data || [];
+        console.log('Parsed quotes:', quotes);
+        setResults(Array.isArray(quotes) ? quotes : []);
         setShowResults(true);
-      }).catch(() => setResults([]));
+      }).catch((err) => {
+        console.error('Search error:', err);
+        setResults([]);
+        setShowResults(false);
+      });
     } else {
       setResults([]);
       setShowResults(false);

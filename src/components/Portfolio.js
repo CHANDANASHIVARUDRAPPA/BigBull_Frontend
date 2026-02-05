@@ -328,7 +328,7 @@ const Portfolio = () => {
         {/* Charts and News Section */}
         <Grid container spacing={4} sx={{ mb: 6 }}>
           {/* Investment Type Distribution Pie Chart */}
-          <Grid item xs={12} lg={6}>
+          <Grid item xs={12} lg={5}>
                 <Card sx={{
                   backgroundColor: themeColors.card,
                   borderRadius: 3,
@@ -417,8 +417,158 @@ const Portfolio = () => {
             </Card>
               </Grid>
 
+              {/* Portfolio Score Card */}
+              <Grid item xs={12} lg={2}>
+                <Card sx={{
+                  backgroundColor: themeColors.card,
+                  borderRadius: 3,
+                  border: `1px solid ${themeColors.border}`,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}>
+                  <CardContent sx={{ p: 4, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 'bold',
+                        color: themeColors.text,
+                        mb: 3,
+                        fontFamily: 'Inter, Arial, sans-serif',
+                        textAlign: 'center',
+                        fontSize: '1.1rem'
+                      }}
+                    >
+                      Portfolio Score
+                    </Typography>
+                    
+                    {/* Circular Score Display */}
+                    <Box sx={{ 
+                      position: 'relative', 
+                      display: 'inline-flex',
+                      mb: 3
+                    }}>
+                      <Box sx={{
+                        width: 150,
+                        height: 150,
+                        borderRadius: '50%',
+                        background: (() => {
+                          const score = Math.min(100, Math.max(0, 50 + (portfolioMetrics.totalPnlPercentage || 0) * 2));
+                          if (score >= 75) return 'conic-gradient(from 0deg, #059669 0%, #10b981 100%)';
+                          if (score >= 50) return 'conic-gradient(from 0deg, #f59e0b 0%, #fbbf24 100%)';
+                          return 'conic-gradient(from 0deg, #dc2626 0%, #ef4444 100%)';
+                        })(),
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
+                      }}>
+                        <Box sx={{
+                          width: 130,
+                          height: 130,
+                          borderRadius: '50%',
+                          backgroundColor: themeColors.card,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexDirection: 'column'
+                        }}>
+                          <Typography variant="h3" sx={{
+                            fontWeight: 'bold',
+                            fontFamily: 'Inter, Arial, sans-serif',
+                            fontSize: '2.5rem',
+                            color: themeColors.text
+                          }}>
+                            {Math.min(100, Math.max(0, Math.round(50 + (portfolioMetrics.totalPnlPercentage || 0) * 2)))}
+                          </Typography>
+                          <Typography variant="caption" sx={{
+                            color: themeColors.secondary,
+                            fontFamily: 'Inter, Arial, sans-serif',
+                            fontSize: '0.75rem'
+                          }}>
+                            / 100
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+
+                    {/* Score Assessment */}
+                    <Box sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                      width: '100%',
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="body2" sx={{
+                        color: themeColors.text,
+                        fontWeight: 'bold',
+                        fontFamily: 'Inter, Arial, sans-serif',
+                        fontSize: '0.9rem',
+                        mb: 0.5
+                      }}>
+                        {(() => {
+                          const score = Math.min(100, Math.max(0, 50 + (portfolioMetrics.totalPnlPercentage || 0) * 2));
+                          if (score >= 75) return 'Excellent';
+                          if (score >= 60) return 'Good';
+                          if (score >= 45) return 'Fair';
+                          return 'Needs Attention';
+                        })()}
+                      </Typography>
+                      <Typography variant="caption" sx={{
+                        color: themeColors.secondary,
+                        fontFamily: 'Inter, Arial, sans-serif',
+                        fontSize: '0.7rem'
+                      }}>
+                        {(() => {
+                          const score = Math.min(100, Math.max(0, 50 + (portfolioMetrics.totalPnlPercentage || 0) * 2));
+                          if (score >= 75) return 'Outstanding performance';
+                          if (score >= 60) return 'Strong returns';
+                          if (score >= 45) return 'Moderate performance';
+                          return 'Consider rebalancing';
+                        })()}
+                      </Typography>
+                    </Box>
+
+                    {/* Metrics Summary */}
+                    <Box sx={{ mt: 3, width: '100%' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="caption" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif', fontSize: '0.7rem' }}>
+                          Assets
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: themeColors.text, fontWeight: 'bold', fontFamily: 'Inter, Arial, sans-serif', fontSize: '0.7rem' }}>
+                          {assets.length}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="caption" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif', fontSize: '0.7rem' }}>
+                          Types
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: themeColors.text, fontWeight: 'bold', fontFamily: 'Inter, Arial, sans-serif', fontSize: '0.7rem' }}>
+                          {investmentTypeData.length}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="caption" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif', fontSize: '0.7rem' }}>
+                          Return
+                        </Typography>
+                        <Typography variant="caption" sx={{ 
+                          color: portfolioMetrics.totalPnlPercentage >= 0 ? '#059669' : '#dc2626', 
+                          fontWeight: 'bold', 
+                          fontFamily: 'Inter, Arial, sans-serif', 
+                          fontSize: '0.7rem' 
+                        }}>
+                          {portfolioMetrics.totalPnlPercentage >= 0 ? '+' : ''}{portfolioMetrics.totalPnlPercentage?.toFixed(2) || '0.00'}%
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
               {/* Top News Section */}
-              <Grid item xs={12} lg={6}>
+              <Grid item xs={12} lg={5}>
                 <Card sx={{
                   backgroundColor: themeColors.card,
                   borderRadius: 3,

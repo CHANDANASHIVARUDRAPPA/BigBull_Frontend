@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Typography, Box, Grid, Card, CardContent, Button, Stack, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert, Container, Tabs, Tab, Divider, Chip } from "@mui/material";
-import { getStockInfo, getStockHistory, buyStock, sellStock, getWallet, withdrawWallet, depositWallet } from "../services/api";
+import { getStockInfo, getStockHistory, buyStock, sellStock, getWallet, withdrawWallet, depositWallet, getStockRisk } from "../services/api";
 import { createWebSocket } from "../services/websocket";
 import TradingViewChart from "../components/stock/TradingViewChart";
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -24,10 +24,16 @@ const StockInfo = () => {
   const [snackbarMsg, setSnackbarMsg] = useState('');
   const [walletBalance, setWalletBalance] = useState(0);
   const [tabValue, setTabValue] = useState(0);
+  const [riskData, setRiskData] = useState(null);
   const { darkMode, themeColors } = useThemeContext();
 
   useEffect(() => {
     getStockInfo(symbol).then((res) => setInfo(res.data.info));
+    getStockRisk(symbol, '1y').then((res) => {
+      setRiskData(res.data);
+    }).catch((err) => {
+      console.error('Failed to fetch risk data:', err);
+    });
   }, [symbol]);
 
   useEffect(() => {
@@ -474,14 +480,266 @@ const StockInfo = () => {
             </Card>
           </Grid>
 
-          {/* RIGHT SIDE - Chart */}
+          {/* RIGHT SIDE - Risk Analysis & Chart */}
           <Grid item xs={12} lg={8}>
+            {/* Risk Analysis Card */}
+            {riskData && (
+              <Card sx={{
+                borderRadius: 3,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                backgroundColor: themeColors.card,
+                border: `1px solid ${themeColors.border}`,
+                mb: 3
+              }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Box sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    background: darkMode 
+                      ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%)'
+                      : 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)',
+                    border: `2px solid ${
+                      riskData.risk_score < 30 ? '#059669' : 
+                      riskData.risk_score < 60 ? '#f59e0b' : 
+                      '#dc2626'
+                    }`
+                  }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontFamily: 'Inter, Arial, sans-serif',
+                          fontSize: '0.9rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: 1,
+                          color: themeColors.secondary,
+                          fontWeight: 600
+                        }}
+                      >
+                        Risk Analysis
+                      </Typography>
+                      <Chip
+                        label={riskData.risk_rating || 'N/A'}
+                        sx={{
+                          backgroundColor: 
+                            riskData.risk_score < 30 ? '#059669' : 
+                            riskData.risk_score < 60 ? '#f59e0b' : 
+                            '#dc2626',
+                          color: '#ffffff',
+                          fontWeight: 'bold',
+                          fontFamily: 'Inter, Arial, sans-serif',
+                          fontSize: '0.75rem'
+                        }}
+                        size="small"
+                      />
+                    </Box>
+
+                    {/* Risk Score - Prominent Display */}
+                    <Box sx={{ 
+                      textAlign: 'center', 
+                      mb: 3, 
+                      p: 2, 
+                      borderRadius: 2,
+                      backgroundColor: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)'
+                    }}>
+                      <Typography variant="caption" sx={{ 
+                        color: themeColors.secondary, 
+                        fontFamily: 'Inter, Arial, sans-serif', 
+                        fontSize: '0.75rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: 1
+                      }}>
+                        Risk Score
+                      </Typography>
+                      <Typography variant="h3" sx={{ 
+                        fontWeight: 'bold', 
+                        fontFamily: 'Inter, Arial, sans-serif',
+                        fontSize: '2.5rem',
+                        background: riskData.risk_score < 30 
+                          ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+                          : riskData.risk_score < 60 
+                          ? 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)'
+                          : 'linear-gradient(135deg, #dc2626 0%, #ef4444 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text'
+                      }}>
+                        {riskData.risk_score ? riskData.risk_score.toFixed(1) : 'N/A'}
+                      </Typography>
+                      <Typography variant="caption" sx={{ 
+                        color: themeColors.secondary, 
+                        fontFamily: 'Inter, Arial, sans-serif',
+                        fontSize: '0.7rem'
+                      }}>
+                        {riskData.interpretation?.risk_assessment || ''}
+                      </Typography>
+                    </Box>
+
+                    {/* Metrics Grid */}
+                    <Grid container spacing={2}>
+                      <Grid item xs={6} md={3}>
+                        <Box sx={{ 
+                          p: 1.5, 
+                          borderRadius: 1, 
+                          backgroundColor: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)'
+                        }}>
+                          <Typography variant="caption" sx={{ 
+                            color: themeColors.secondary, 
+                            fontFamily: 'Inter, Arial, sans-serif', 
+                            fontSize: '0.75rem',
+                            display: 'block',
+                            mb: 0.5
+                          }}>
+                            Beta
+                          </Typography>
+                          <Typography variant="h6" sx={{ 
+                            fontWeight: 'bold', 
+                            color: themeColors.text, 
+                            fontFamily: 'Inter, Arial, sans-serif',
+                            fontSize: '1.1rem'
+                          }}>
+                            {riskData.metrics?.beta ? riskData.metrics.beta.toFixed(2) : 'N/A'}
+                          </Typography>
+                          <Typography variant="caption" sx={{ 
+                            color: themeColors.secondary, 
+                            fontFamily: 'Inter, Arial, sans-serif',
+                            fontSize: '0.65rem',
+                            display: 'block',
+                            mt: 0.5
+                          }}>
+                            {riskData.interpretation?.beta || ''}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6} md={3}>
+                        <Box sx={{ 
+                          p: 1.5, 
+                          borderRadius: 1, 
+                          backgroundColor: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)'
+                        }}>
+                          <Typography variant="caption" sx={{ 
+                            color: themeColors.secondary, 
+                            fontFamily: 'Inter, Arial, sans-serif', 
+                            fontSize: '0.75rem',
+                            display: 'block',
+                            mb: 0.5
+                          }}>
+                            Volatility Score
+                          </Typography>
+                          <Typography variant="h6" sx={{ 
+                            fontWeight: 'bold', 
+                            color: riskData.metrics?.volatility_score > 20 ? '#dc2626' : themeColors.text, 
+                            fontFamily: 'Inter, Arial, sans-serif',
+                            fontSize: '1.1rem'
+                          }}>
+                            {riskData.metrics?.volatility_score ? `${riskData.metrics.volatility_score.toFixed(1)}%` : 'N/A'}
+                          </Typography>
+                          <Typography variant="caption" sx={{ 
+                            color: themeColors.secondary, 
+                            fontFamily: 'Inter, Arial, sans-serif',
+                            fontSize: '0.65rem',
+                            display: 'block',
+                            mt: 0.5
+                          }}>
+                            52-week change
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6} md={3}>
+                        <Box sx={{ 
+                          p: 1.5, 
+                          borderRadius: 1, 
+                          backgroundColor: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)'
+                        }}>
+                          <Typography variant="caption" sx={{ 
+                            color: themeColors.secondary, 
+                            fontFamily: 'Inter, Arial, sans-serif', 
+                            fontSize: '0.75rem',
+                            display: 'block',
+                            mb: 0.5
+                          }}>
+                            Beta Score
+                          </Typography>
+                          <Typography variant="h6" sx={{ 
+                            fontWeight: 'bold', 
+                            color: themeColors.text, 
+                            fontFamily: 'Inter, Arial, sans-serif',
+                            fontSize: '1.1rem'
+                          }}>
+                            {riskData.metrics?.beta_score ? riskData.metrics.beta_score.toFixed(1) : 'N/A'}
+                          </Typography>
+                          <Typography variant="caption" sx={{ 
+                            color: themeColors.secondary, 
+                            fontFamily: 'Inter, Arial, sans-serif',
+                            fontSize: '0.65rem',
+                            display: 'block',
+                            mt: 0.5
+                          }}>
+                            Market correlation
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6} md={3}>
+                        <Box sx={{ 
+                          p: 1.5, 
+                          borderRadius: 1, 
+                          backgroundColor: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.5)'
+                        }}>
+                          <Typography variant="caption" sx={{ 
+                            color: themeColors.secondary, 
+                            fontFamily: 'Inter, Arial, sans-serif', 
+                            fontSize: '0.75rem',
+                            display: 'block',
+                            mb: 0.5
+                          }}>
+                            52-Week Change
+                          </Typography>
+                          <Typography variant="h6" sx={{ 
+                            fontWeight: 'bold', 
+                            color: riskData.metrics?.fifty_two_week_change >= 0 ? '#059669' : '#dc2626', 
+                            fontFamily: 'Inter, Arial, sans-serif',
+                            fontSize: '1.1rem'
+                          }}>
+                            {riskData.metrics?.fifty_two_week_change 
+                              ? `${(riskData.metrics.fifty_two_week_change * 100).toFixed(1)}%` 
+                              : 'N/A'}
+                          </Typography>
+                          <Typography variant="caption" sx={{ 
+                            color: themeColors.secondary, 
+                            fontFamily: 'Inter, Arial, sans-serif',
+                            fontSize: '0.65rem',
+                            display: 'block',
+                            mt: 0.5
+                          }}>
+                            Annual performance
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    </Grid>
+
+                    {/* Data Source */}
+                    <Typography variant="caption" sx={{ 
+                      color: themeColors.secondary, 
+                      fontFamily: 'Inter, Arial, sans-serif',
+                      fontSize: '0.65rem',
+                      display: 'block',
+                      mt: 2,
+                      textAlign: 'center',
+                      opacity: 0.6
+                    }}>
+                      {riskData.risk_type} • {riskData.data_source}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Chart Card */}
             <Card sx={{
               borderRadius: 3,
               boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
               backgroundColor: themeColors.card,
-              border: `1px solid ${themeColors.border}`,
-              height: '100%'
+              border: `1px solid ${themeColors.border}`
             }}>
               <CardContent sx={{ p: 4 }}>
                 <Box sx={{
