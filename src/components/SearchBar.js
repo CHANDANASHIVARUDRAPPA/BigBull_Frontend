@@ -178,8 +178,8 @@ const SearchBar = () => {
         </Box>
 
         {/* Feature Cards */}
-        <Grid container spacing={3} sx={{ maxWidth: '100%', mx: 'auto' }}>
-          <Grid item xs={12} sm={6} lg={4}>
+        <Grid container spacing={2} sx={{ maxWidth: '100%', mx: 'auto', display: 'flex', flexWrap: 'nowrap' }}>
+          <Grid item xs={4}>
             <Card
               sx={{
                 height: '100%',
@@ -219,7 +219,7 @@ const SearchBar = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} lg={4}>
+          <Grid item xs={4}>
             <Card
               sx={{
                 height: '100%',
@@ -259,7 +259,7 @@ const SearchBar = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={6} lg={4}>
+          <Grid item xs={4}>
             <Card
               sx={{
                 height: '100%',
