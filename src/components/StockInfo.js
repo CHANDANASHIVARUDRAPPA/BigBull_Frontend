@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Typography, Box, Grid, Card, CardContent, Button, Stack, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert, Container } from "@mui/material";
+import { Typography, Box, Grid, Card, CardContent, Button, Stack, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert, Container, Tabs, Tab, Divider, Chip } from "@mui/material";
 import { getStockInfo, getStockHistory, buyStock, sellStock, getWallet, withdrawWallet, depositWallet } from "../services/api";
 import { createWebSocket } from "../services/websocket";
 import TradingViewChart from "../components/stock/TradingViewChart";
@@ -23,6 +23,7 @@ const StockInfo = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState('');
   const [walletBalance, setWalletBalance] = useState(0);
+  const [tabValue, setTabValue] = useState(0);
   const { darkMode, themeColors } = useThemeContext();
 
   useEffect(() => {
@@ -139,8 +140,11 @@ const StockInfo = () => {
   );
 
   const currentPrice = Number(liveData.price || info.currentPrice || 0);
-  const priceChange = liveData.change || 0;
-  const priceChangePercent = liveData.changePercent || 0;
+  
+  // Calculate price change from previous close or opening price
+  const referencePrice = info.previousClose || info.regularMarketPreviousClose || info.open || info.regularMarketOpen || currentPrice;
+  const priceChange = currentPrice - referencePrice;
+  const priceChangePercent = referencePrice > 0 ? ((priceChange / referencePrice) * 100) : 0;
 
   return (
     <Container maxWidth="xl">
@@ -551,6 +555,601 @@ const StockInfo = () => {
             </Card>
           </Grid>
         </Grid>
+
+        {/* Tabs Section - Stock Information (Full Width) */}
+        <Card sx={{
+          borderRadius: 3,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+          backgroundColor: themeColors.card,
+          border: `1px solid ${themeColors.border}`,
+          mt: 4
+        }}>
+              <Box sx={{ borderBottom: 1, borderColor: themeColors.border }}>
+                <Tabs
+                  value={tabValue}
+                  onChange={(e, newValue) => setTabValue(newValue)}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{
+                    '& .MuiTab-root': {
+                      fontFamily: 'Inter, Arial, sans-serif',
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      color: themeColors.secondary,
+                      '&.Mui-selected': {
+                        color: themeColors.accent
+                      }
+                    },
+                    '& .MuiTabs-indicator': {
+                      backgroundColor: themeColors.accent
+                    }
+                  }}
+                >
+                  <Tab label="Overview" />
+                  <Tab label="Company Info" />
+                  <Tab label="Financial Metrics" />
+                  <Tab label="Trading Info" />
+                  <Tab label="Dividends & Splits" />
+                </Tabs>
+              </Box>
+
+              {/* Tab Panel 0 - Overview */}
+              {tabValue === 0 && (
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                    Key Statistics
+                  </Typography>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Market Cap</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.marketCap ? `$${(info.marketCap / 1e9).toFixed(2)}B` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>PE Ratio (TTM)</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.trailingPE ? info.trailingPE.toFixed(2) : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Forward PE</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.forwardPE ? info.forwardPE.toFixed(2) : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>EPS (TTM)</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.trailingEps ? `$${info.trailingEps.toFixed(2)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Beta</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.beta ? info.beta.toFixed(3) : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Price to Book</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.priceToBook ? info.priceToBook.toFixed(2) : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>52 Week High</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.fiftyTwoWeekHigh ? `$${info.fiftyTwoWeekHigh.toFixed(2)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>52 Week Low</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.fiftyTwoWeekLow ? `$${info.fiftyTwoWeekLow.toFixed(2)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Analyst Rating</Typography>
+                        <Chip 
+                          label={info.averageAnalystRating || 'N/A'} 
+                          sx={{ 
+                            backgroundColor: themeColors.accent, 
+                            color: '#ffffff',
+                            fontFamily: 'Inter, Arial, sans-serif',
+                            fontWeight: 600
+                          }} 
+                        />
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              )}
+
+              {/* Tab Panel 1 - Company Info */}
+              {tabValue === 1 && (
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                    Company Information
+                  </Typography>
+                  
+                  <Box sx={{ mb: 4 }}>
+                    <Typography variant="subtitle2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif', textTransform: 'uppercase', fontSize: '0.85rem' }}>
+                      About {info.shortName}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: themeColors.text, lineHeight: 1.8, fontFamily: 'Inter, Arial, sans-serif', textAlign: 'justify' }}>
+                      {info.longBusinessSummary || 'No description available'}
+                    </Typography>
+                  </Box>
+
+                  <Divider sx={{ my: 3, borderColor: themeColors.border }} />
+
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Industry</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                        {info.industry || 'N/A'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Sector</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                        {info.sector || 'N/A'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Employees</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                        {info.fullTimeEmployees ? info.fullTimeEmployees.toLocaleString() : 'N/A'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Headquarters</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                        {info.city && info.state ? `${info.city}, ${info.state}` : 'N/A'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Website</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600, color: themeColors.accent, fontFamily: 'Inter, Arial, sans-serif' }}>
+                        {info.website ? <a href={info.website} target="_blank" rel="noopener noreferrer" style={{ color: themeColors.accent }}>{info.website}</a> : 'N/A'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Phone</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                        {info.phone || 'N/A'}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+
+                  {info.companyOfficers && info.companyOfficers.length > 0 && (
+                    <>
+                      <Divider sx={{ my: 4, borderColor: themeColors.border }} />
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                        Key Executives
+                      </Typography>
+                      <Grid container spacing={2}>
+                        {info.companyOfficers.slice(0, 5).map((officer, idx) => (
+                          <Grid item xs={12} key={idx}>
+                            <Box sx={{ p: 2, borderRadius: 2, backgroundColor: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${themeColors.border}` }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                                {officer.name}
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>
+                                {officer.title}
+                              </Typography>
+                              {officer.totalPay && (
+                                <Typography variant="body2" sx={{ color: themeColors.accent, fontFamily: 'Inter, Arial, sans-serif', mt: 0.5 }}>
+                                  Compensation: ${(officer.totalPay / 1e6).toFixed(2)}M
+                                </Typography>
+                              )}
+                            </Box>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </>
+                  )}
+                </CardContent>
+              )}
+
+              {/* Tab Panel 2 - Financial Metrics */}
+              {tabValue === 2 && (
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                    Financial Performance
+                  </Typography>
+                  
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ p: 3, borderRadius: 2, backgroundColor: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${themeColors.border}`, height: '100%' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                          Revenue & Profitability
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Total Revenue</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.totalRevenue ? `$${(info.totalRevenue / 1e9).toFixed(2)}B` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Revenue Per Share</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.revenuePerShare ? `$${info.revenuePerShare.toFixed(2)}` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Revenue Growth</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: info.revenueGrowth >= 0 ? '#059669' : '#dc2626', fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.revenueGrowth ? `${(info.revenueGrowth * 100).toFixed(2)}%` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Gross Profit</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.grossProfits ? `$${(info.grossProfits / 1e9).toFixed(2)}B` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Net Income</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.netIncomeToCommon ? `$${(info.netIncomeToCommon / 1e9).toFixed(2)}B` : 'N/A'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ p: 3, borderRadius: 2, backgroundColor: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${themeColors.border}`, height: '100%' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                          Margins & Returns
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Gross Margin</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.grossMargins ? `${(info.grossMargins * 100).toFixed(2)}%` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Operating Margin</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.operatingMargins ? `${(info.operatingMargins * 100).toFixed(2)}%` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Profit Margin</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.profitMargins ? `${(info.profitMargins * 100).toFixed(2)}%` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Return on Assets</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.returnOnAssets ? `${(info.returnOnAssets * 100).toFixed(2)}%` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Return on Equity</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.returnOnEquity ? `${(info.returnOnEquity * 100).toFixed(2)}%` : 'N/A'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ p: 3, borderRadius: 2, backgroundColor: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${themeColors.border}`, height: '100%' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                          Cash Flow
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Operating Cash Flow</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.operatingCashflow ? `$${(info.operatingCashflow / 1e9).toFixed(2)}B` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Free Cash Flow</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.freeCashflow ? `$${(info.freeCashflow / 1e9).toFixed(2)}B` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>EBITDA</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.ebitda ? `$${(info.ebitda / 1e9).toFixed(2)}B` : 'N/A'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ p: 3, borderRadius: 2, backgroundColor: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${themeColors.border}`, height: '100%' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                          Balance Sheet
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Total Cash</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.totalCash ? `$${(info.totalCash / 1e9).toFixed(2)}B` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Total Debt</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.totalDebt ? `$${(info.totalDebt / 1e9).toFixed(2)}B` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Debt to Equity</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.debtToEquity ? info.debtToEquity.toFixed(2) : 'N/A'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              )}
+
+              {/* Tab Panel 3 - Trading Info */}
+              {tabValue === 3 && (
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                    Trading Information
+                  </Typography>
+                  
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Today's Open</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.open ? `$${info.open.toFixed(2)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Previous Close</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.previousClose ? `$${info.previousClose.toFixed(2)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Day's Range</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.dayLow && info.dayHigh ? `$${info.dayLow.toFixed(2)} - $${info.dayHigh.toFixed(2)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Volume</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.volume ? info.volume.toLocaleString() : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Average Volume</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.averageVolume ? info.averageVolume.toLocaleString() : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Average Volume (10 days)</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.averageVolume10days ? info.averageVolume10days.toLocaleString() : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Bid</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.bid ? `$${info.bid.toFixed(2)} x ${info.bidSize || 0}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Ask</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.ask ? `$${info.ask.toFixed(2)} x ${info.askSize || 0}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>50 Day Average</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.fiftyDayAverage ? `$${info.fiftyDayAverage.toFixed(2)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>200 Day Average</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.twoHundredDayAverage ? `$${info.twoHundredDayAverage.toFixed(2)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Shares Outstanding</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.sharesOutstanding ? (info.sharesOutstanding / 1e9).toFixed(2) + 'B' : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Float Shares</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.floatShares ? (info.floatShares / 1e9).toFixed(2) + 'B' : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+
+                  <Divider sx={{ my: 4, borderColor: themeColors.border }} />
+
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                    Analyst Targets
+                  </Typography>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Target Low</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#dc2626', fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.targetLowPrice ? `$${info.targetLowPrice.toFixed(2)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Target Mean</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.accent, fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.targetMeanPrice ? `$${info.targetMeanPrice.toFixed(2)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: themeColors.secondary, mb: 1, fontFamily: 'Inter, Arial, sans-serif' }}>Target High</Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: '#059669', fontFamily: 'Inter, Arial, sans-serif' }}>
+                          {info.targetHighPrice ? `$${info.targetHighPrice.toFixed(2)}` : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              )}
+
+              {/* Tab Panel 4 - Dividends & Splits */}
+              {tabValue === 4 && (
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                    Dividends & Stock Splits
+                  </Typography>
+                  
+                  <Grid container spacing={4}>
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ p: 3, borderRadius: 2, backgroundColor: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${themeColors.border}` }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                          Dividend Information
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Dividend Rate (Annual)</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.dividendRate ? `$${info.dividendRate.toFixed(2)}` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Dividend Yield</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.dividendYield ? `${(info.dividendYield * 100).toFixed(2)}%` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>5 Year Avg Yield</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.fiveYearAvgDividendYield ? `${(info.fiveYearAvgDividendYield * 100).toFixed(2)}%` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Payout Ratio</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.payoutRatio ? `${(info.payoutRatio * 100).toFixed(2)}%` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Ex-Dividend Date</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.exDividendDate ? new Date(info.exDividendDate * 1000).toLocaleDateString() : 'N/A'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ p: 3, borderRadius: 2, backgroundColor: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${themeColors.border}` }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                          Stock Split History
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Last Split Factor</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.lastSplitFactor || 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>Last Split Date</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: themeColors.text, fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.lastSplitDate ? new Date(info.lastSplitDate * 1000).toLocaleDateString() : 'N/A'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+
+                      <Box sx={{ p: 3, borderRadius: 2, backgroundColor: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${themeColors.border}`, mt: 3 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, fontFamily: 'Inter, Arial, sans-serif', color: themeColors.text }}>
+                          Historical Highs/Lows
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>All Time High</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: '#059669', fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.allTimeHigh ? `$${info.allTimeHigh.toFixed(2)}` : 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ color: themeColors.secondary, fontFamily: 'Inter, Arial, sans-serif' }}>All Time Low</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: '#dc2626', fontFamily: 'Inter, Arial, sans-serif' }}>
+                              {info.allTimeLow ? `$${info.allTimeLow.toFixed(2)}` : 'N/A'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              )}
+            </Card>
 
         {/* Transaction Dialog */}
         <Dialog
